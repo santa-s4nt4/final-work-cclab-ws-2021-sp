@@ -1,4 +1,5 @@
 # %%
+import tweepy
 import torch
 import torch.nn as nn
 from torch.autograd import Variable
@@ -277,7 +278,7 @@ lr = lr
 best_val_loss = None
 
 # %%
-epochs = 100
+epochs = 30
 try:
     for epoch in range(1, epochs+1):
         epoch_start_time = time.time()
@@ -313,7 +314,13 @@ print('=' * 89)
 
 # %%
 temperature = 1.0
-for j in range(10):
+
+CK = ""
+CS = ""
+AT = ""
+AS = ""
+
+for j in range(1):
     # 隠れ層はランダムに初期化
     hidden = model.init_hidden(1)
 
@@ -336,5 +343,8 @@ for j in range(10):
         results.append(word)
 
     print(' '.join(results))
-
-# %%
+    print(''.join(results))
+    auth = tweepy.OAuthHandler(CK, CS)
+    auth.set_access_token(AT, AS)
+    api = tweepy.API(auth)
+    api.update_status(''.join(results)+"\n#Santaの文章生成")
