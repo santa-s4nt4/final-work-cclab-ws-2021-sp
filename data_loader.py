@@ -32,3 +32,19 @@ timestr = time.strftime('%Y%m%d-%H%M%S')
 out_file_name = "/home/santanaruse/dev/PyTorch_workshop_2021/final_work/tweet/wakachi_" + timestr + ".txt"
 with open(out_file_name, 'w') as f:
     f.write(text)
+
+
+# %%
+
+m = MeCab.Tagger("-Owakati")
+timestr = time.strftime('%Y%m%d-%H%M%S')
+for line in open('/home/santanaruse/dev/PyTorch_workshop_2021/final_work/tweet_data/tweets_text.txt', 'r'):
+    words = m.parse(line)
+    words = words.rstrip('\n')
+    print(words)
+
+out_file_name = "/home/santanaruse/dev/PyTorch_workshop_2021/final_work/tweet_data/wakachi_" + timestr + ".txt"
+with open(out_file_name, 'w') as f:
+    f.write(words)
+
+# %%
