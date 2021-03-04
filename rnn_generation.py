@@ -198,9 +198,9 @@ log_interval = 200
 
 
 def repackage_hidden(h):
-    """Wraps hidden states in new Variables, to detach them from their history."""
-    if type(h) == Variable:
-        return Variable(h.data)
+    """Wraps hidden states in new Tensors, to detach them from their history."""
+    if isinstance(h, torch.Tensor):
+        return h.detach()
     else:
         return tuple(repackage_hidden(v) for v in h)
 
@@ -234,7 +234,7 @@ def evaluate(data_source):
         output_flat = output.view(-1, ntokens)
         total_loss += len(data) * criterion(output_flat, targets).data
         hidden = repackage_hidden(hidden)
-    return total_loss[0] / len(data_source)
+    return total_loss / (len(data_source) - 1)
 
 
 def train():
@@ -259,10 +259,10 @@ def train():
         for p in model.parameters():
             p.data.add_(-lr, p.grad.data)
 
-        total_loss += loss.data
+        total_loss += loss.data.item()
 
         if batch % log_interval == 0 and batch > 0:
-            cur_loss = total_loss[0] / log_interval
+            cur_loss = total_loss / log_interval
             elapsed = time.time() - start_time
             print('| epoch {:3d} | {:5d}/{:5d} batches | lr {:02.2f} | ms/batch {:5.2f} | '
                   'loss {:5.2f} | ppl {:8.2f}'.format(
@@ -277,7 +277,7 @@ lr = lr
 best_val_loss = None
 
 # %%
-epochs = 30
+epochs = 100
 try:
     for epoch in range(1, epochs+1):
         epoch_start_time = time.time()
@@ -299,5 +299,42 @@ try:
 except KeyboardInterrupt:
     print('-' * 89)
     print('Exiting from training early')
+
+# %%
+with open('model.pt', 'rb') as f:
+    model = torch.load(f)
+
+# %%
+test_loss = evaluate(test_data)
+print('=' * 89)
+print('| End of training | test loss {:5.2f} | test ppl {:8.2f}'.format(
+    test_loss, math.exp(test_loss)))
+print('=' * 89)
+
+# %%
+temperature = 1.0
+for j in range(10):
+    # 隠れ層はランダムに初期化
+    hidden = model.init_hidden(1)
+
+    # <bos>から始める
+    input = Variable(torch.LongTensor(
+        [[corpus.dictionary.word2idx['<bos>']]]), volatile=True).cuda()
+    model = model
+    results = []
+    for i in range(100):
+        output, hidden = model(input, hidden)
+        word_weights = output.squeeze().data.div(temperature).exp()
+        word_idx = torch.multinomial(word_weights, 1)[0]
+        input.data.fill_(word_idx)
+        word = corpus.dictionary.idx2word[word_idx]
+
+        # <eos>が出たら1文終わり
+        if word == '<eos>':
+            break
+
+        results.append(word)
+
+    print(' '.join(results))
 
 # %%
