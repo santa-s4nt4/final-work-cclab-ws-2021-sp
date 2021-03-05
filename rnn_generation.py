@@ -11,7 +11,7 @@ import os
 import time
 import math
 
-use_gpu = torch.cuda.is_available()
+device = torch.cuda.is_available()
 
 # %%
 
@@ -37,7 +37,7 @@ class Corpus(object):
     def __init__(self, corpus_path):
         self.dictionary = Dictionary()
 
-        texts = self.load(corpus_path, 10000)
+        texts = self.load(corpus_path, 15531)
         texts = self.tokenize(texts)
 
         train_size = int(len(texts) * 0.8)
@@ -160,13 +160,10 @@ corpus = Corpus(
 
 
 def batchify(data, bsz):
-    # Work out how cleanly we can divide the dataset into bsz parts.
     nbatch = data.size(0) // bsz
-    # Trim off any extra elements that wouldn't cleanly fit (remainders).
     data = data.narrow(0, 0, nbatch * bsz)
-    # Evenly divide the data across the bsz batches.
     data = data.view(bsz, -1).t().contiguous()
-    if use_gpu:
+    if device:
         data = data.cuda()
     return data
 
@@ -185,8 +182,8 @@ nlayers = 1
 dropout = 0.5
 tied = False
 ntokens = len(corpus.dictionary)
-model = RNNModel('GRU', ntokens, emsize, nhid, nlayers, dropout, tied)
-if use_gpu:
+model = RNNModel('LSTM', ntokens, emsize, nhid, nlayers, dropout, tied)
+if device:
     model.cuda()
 
 criterion = nn.CrossEntropyLoss()
